@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { refreshSpotifyAccessToken } from "@/lib/tunify/auth";
+import { refreshSpotifyAccessToken } from "@/lib/spotify/auth/tokens";
 import {
   SPOTIFY_COOKIES,
   spotifyCookieOptions,
-} from "@/lib/tunify/cookies";
+} from "@/lib/spotify/auth/cookies";
 
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 

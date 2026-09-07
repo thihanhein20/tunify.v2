@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import type { SpotifyUserProfile } from "@/types/tunify";
+import type { SpotifyUserProfile } from "@/lib/spotify/types";
 
 type DashboardHeaderProps = {
   user: SpotifyUserProfile;

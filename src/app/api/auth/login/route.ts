@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import {
   spotifyConfig,
   getSpotifyRedirectUri,
-} from "@/lib/tunify/config";
+} from "@/lib/spotify/config";
 
 export async function GET() {
   const { clientId, authorizeUrl, scopes } = spotifyConfig;

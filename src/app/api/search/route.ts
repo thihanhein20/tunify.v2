@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { searchSpotify } from "@/lib/tunify/search";
-import { SpotifyApiError } from "@/lib/tunify/client";
+import { searchSpotify } from "@/lib/spotify/api/search";
+import { SpotifyApiError } from "@/lib/spotify/api/client";
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim();

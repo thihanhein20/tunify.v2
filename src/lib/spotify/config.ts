@@ -9,8 +9,16 @@ export const spotifyConfig = {
   scopes: [
     "user-read-private",
     "user-read-email",
+
     "user-top-read",
+    "user-read-recently-played",
     "playlist-read-private",
+
+    "streaming",
+
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-read-currently-playing",
   ],
 };
 

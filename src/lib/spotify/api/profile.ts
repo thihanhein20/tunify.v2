@@ -1,4 +1,4 @@
-import type { SpotifyUserProfile } from "@/types/tunify";
+import type { SpotifyUserProfile } from "@/lib/spotify/types";
 
 import { spotifyFetch } from "./client";
 

@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { SpotifyTrack } from "@/lib/tunify/track";
+import type { SpotifyTrack } from "@/lib/spotify/types";
 
 type TopTracksProps = {
   tracks: SpotifyTrack[];

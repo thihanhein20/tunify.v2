@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { SearchBar } from "@/components/search/SearchBar";
-import { SearchResults } from "@/components/search/SearchResult";
+import { SearchResults } from "@/components/search/SearchResults";
 
-import { hasSpotifySession } from "@/lib/tunify/session";
-import { searchSpotify } from "@/lib/tunify/search";
+import { hasSpotifySession } from "@/lib/spotify/auth/session";
+import { searchSpotify } from "@/lib/spotify/api/search";
 
 type SearchPageProps = {
   searchParams: Promise<{

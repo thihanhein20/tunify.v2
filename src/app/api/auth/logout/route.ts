@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAppUrl } from "@/lib/tunify/config";
+import { getAppUrl } from "@/lib/spotify/config";
 
-import { SPOTIFY_COOKIES } from "@/lib/tunify/cookies";
+import { SPOTIFY_COOKIES } from "@/lib/spotify/auth/cookies";
 
 export async function GET() {
   const response = NextResponse.redirect(

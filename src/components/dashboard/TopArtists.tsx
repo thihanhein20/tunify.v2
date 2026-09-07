@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { SpotifyArtist } from "@/lib/tunify/artists";
+import type { SpotifyArtist } from "@/lib/spotify/types";
 
 type TopArtistsProps = {
   artists: SpotifyArtist[];

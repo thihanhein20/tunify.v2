@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { exchangeCodeForTokens } from "@/lib/tunify/auth";
-import { getAppUrl } from "@/lib/tunify/config";
+import { exchangeCodeForTokens } from "@/lib/spotify/auth/tokens";
+import { getAppUrl } from "@/lib/spotify/config";
 import {
   SPOTIFY_COOKIES,
   spotifyCookieOptions,
-} from "@/lib/tunify/cookies";
+} from "@/lib/spotify/auth/cookies";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");

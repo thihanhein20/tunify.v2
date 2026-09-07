@@ -1,12 +1,12 @@
 import type {
   SpotifyRefreshTokenResponse,
   SpotifyTokenResponse,
-} from "@/types/tunify";
+} from "@/lib/spotify/types";
 
 import {
   getSpotifyRedirectUri,
   spotifyConfig,
-} from "./config";
+} from "../config";
 
 function getBasicAuthorizationHeader() {
   const { clientId, clientSecret } = spotifyConfig;

@@ -3,7 +3,7 @@ import Image from "next/image";
 import type {
   SpotifySearchResponse,
   SpotifySearchTrack,
-} from "@/lib/tunify/search";
+} from "@/lib/spotify/types";
 
 type SearchResultsProps = {
   results: SpotifySearchResponse;

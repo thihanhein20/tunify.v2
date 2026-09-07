@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 
-import { refreshSpotifyAccessToken } from "./auth";
-import { SPOTIFY_COOKIES } from "./cookies";
-import { spotifyConfig } from "./config";
+import { refreshSpotifyAccessToken } from "../auth/tokens";
+import { SPOTIFY_COOKIES } from "../auth/cookies";
+import { spotifyConfig } from "../config";
 
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 
