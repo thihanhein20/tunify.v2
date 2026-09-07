@@ -1,13 +1,9 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 
+import { refreshSpotifyAccessToken } from "./auth";
+import { SPOTIFY_COOKIES } from "./cookies";
 import { spotifyConfig } from "./config";
-import {
-  refreshSpotifyAccessToken,
-} from "./auth";
-import {
-  SPOTIFY_COOKIES,
-  spotifyCookieOptions,
-} from "./cookies";
 
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 
@@ -22,78 +18,44 @@ export class SpotifyApiError extends Error {
   }
 }
 
-async function getValidAccessToken(): Promise<string> {
-  const cookieStore = await cookies();
+const getValidAccessToken = cache(
+  async (): Promise<string> => {
+    const cookieStore = await cookies();
 
-  const accessToken =
-    cookieStore.get(SPOTIFY_COOKIES.accessToken)?.value;
+    const accessToken =
+      cookieStore.get(SPOTIFY_COOKIES.accessToken)?.value;
 
-  const refreshToken =
-    cookieStore.get(SPOTIFY_COOKIES.refreshToken)?.value;
+    const refreshToken =
+      cookieStore.get(SPOTIFY_COOKIES.refreshToken)?.value;
 
-  const expiresAt = Number(
-    cookieStore.get(SPOTIFY_COOKIES.expiresAt)?.value
-  );
-
-  const accessTokenIsValid =
-    Boolean(accessToken) &&
-    Number.isFinite(expiresAt) &&
-    Date.now() < expiresAt - TOKEN_EXPIRY_BUFFER_MS;
-
-  if (accessTokenIsValid && accessToken) {
-    return accessToken;
-  }
-
-  if (!refreshToken) {
-    throw new SpotifyApiError(
-      "Spotify authentication required",
-      401
+    const expiresAt = Number(
+      cookieStore.get(SPOTIFY_COOKIES.expiresAt)?.value
     );
-  }
 
-  const tokens =
-    await refreshSpotifyAccessToken(refreshToken);
+    const accessTokenIsValid =
+      Boolean(accessToken) &&
+      Number.isFinite(expiresAt) &&
+      Date.now() < expiresAt - TOKEN_EXPIRY_BUFFER_MS;
 
-  const newExpiresAt =
-    Date.now() + tokens.expires_in * 1000;
-
-  /*
-   * NOTE:
-   * This works when called from a Route Handler / Server Action.
-   * Direct cookie mutation from arbitrary Server Components
-   * is restricted by Next.js.
-   */
-  cookieStore.set(
-    SPOTIFY_COOKIES.accessToken,
-    tokens.access_token,
-    {
-      ...spotifyCookieOptions,
-      maxAge: tokens.expires_in,
+    if (accessTokenIsValid && accessToken) {
+      return accessToken;
     }
-  );
 
-  cookieStore.set(
-    SPOTIFY_COOKIES.expiresAt,
-    newExpiresAt.toString(),
-    {
-      ...spotifyCookieOptions,
-      maxAge: tokens.expires_in,
+    if (!refreshToken) {
+      throw new SpotifyApiError(
+        "Spotify authentication required",
+        401
+      );
     }
-  );
 
-  if (tokens.refresh_token) {
-    cookieStore.set(
-      SPOTIFY_COOKIES.refreshToken,
-      tokens.refresh_token,
-      {
-        ...spotifyCookieOptions,
-        maxAge: 60 * 60 * 24 * 180,
-      }
-    );
+    // Refresh for this server request only.
+    // Cookie persistence happens in a Route Handler.
+    const tokens =
+      await refreshSpotifyAccessToken(refreshToken);
+
+    return tokens.access_token;
   }
-
-  return tokens.access_token;
-}
+);
 
 type SpotifyFetchOptions = Omit<
   RequestInit,
@@ -114,13 +76,11 @@ export async function spotifyFetch<T>(
 
   const response = await fetch(url, {
     ...options,
-
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json",
       ...options.headers,
     },
-
     cache: "no-store",
   });
 
@@ -128,10 +88,9 @@ export async function spotifyFetch<T>(
     const retryAfterHeader =
       response.headers.get("Retry-After");
 
-    const retryAfter =
-      retryAfterHeader !== null
-        ? Number(retryAfterHeader)
-        : undefined;
+    const retryAfter = retryAfterHeader
+      ? Number(retryAfterHeader)
+      : undefined;
 
     throw new SpotifyApiError(
       "Spotify rate limit exceeded",
@@ -154,23 +113,13 @@ export async function spotifyFetch<T>(
       const body = await response.json();
 
       if (
-        typeof body === "object" &&
-        body !== null &&
-        "error" in body
+        body?.error?.message &&
+        typeof body.error.message === "string"
       ) {
-        const error = body.error;
-
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          "message" in error &&
-          typeof error.message === "string"
-        ) {
-          message = error.message;
-        }
+        message = body.error.message;
       }
     } catch {
-      // Ignore malformed/non-JSON Spotify responses.
+      // Response was not JSON.
     }
 
     throw new SpotifyApiError(

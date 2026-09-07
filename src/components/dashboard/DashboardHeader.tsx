@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import type { SpotifyUserProfile } from "@/types/tunify";
 
@@ -24,6 +25,14 @@ export function DashboardHeader({
             ? `, ${user.display_name}`
             : ""}
         </h1>
+
+
+        <Link
+          href="/search"
+          className="text-sm text-zinc-400 transition hover:text-white"
+        >
+          Search
+        </Link>
 
         <p className="mt-3 text-zinc-400">
           Here&apos;s what you&apos;ve been listening to.
