@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { exchangeCodeForTokens } from "@/lib/tunify/auth";
+import { getAppUrl } from "@/lib/tunify/config";
+import {
+  SPOTIFY_COOKIES,
+  spotifyCookieOptions,
+} from "@/lib/tunify/cookies";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const error = request.nextUrl.searchParams.get("error");
 
-  const storedState = request.cookies.get(
-    "spotify_oauth_state"
-  )?.value;
+  const storedState =
+    request.cookies.get(SPOTIFY_COOKIES.oauthState)?.value;
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/?error=${encodeURIComponent(error)}`, request.url)
+      new URL(
+        `/?error=${encodeURIComponent(error)}`,
+        getAppUrl()
+      )
     );
   }
 
@@ -35,33 +42,42 @@ export async function GET(request: NextRequest) {
     const tokens = await exchangeCodeForTokens(code);
 
     const response = NextResponse.redirect(
-      new URL("/dashboard", request.url)
+      new URL("/dashboard", getAppUrl())
     );
 
-    response.cookies.delete("spotify_oauth_state");
+    const expiresAt =
+      Date.now() + tokens.expires_in * 1000;
+
+    response.cookies.delete(SPOTIFY_COOKIES.oauthState);
 
     response.cookies.set(
-      "spotify_access_token",
+      SPOTIFY_COOKIES.accessToken,
       tokens.access_token,
       {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
+        ...spotifyCookieOptions,
+        maxAge: tokens.expires_in,
+      }
+    );
+
+    response.cookies.set(
+      SPOTIFY_COOKIES.expiresAt,
+      expiresAt.toString(),
+      {
+        ...spotifyCookieOptions,
         maxAge: tokens.expires_in,
       }
     );
 
     if (tokens.refresh_token) {
       response.cookies.set(
-        "spotify_refresh_token",
+        SPOTIFY_COOKIES.refreshToken,
         tokens.refresh_token,
         {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 60 * 60 * 24 * 30,
+          ...spotifyCookieOptions,
+
+          // Spotify currently documents refresh tokens for
+          // Developer Dashboard apps as lasting six months.
+          maxAge: 60 * 60 * 24 * 180,
         }
       );
     }
@@ -71,7 +87,10 @@ export async function GET(request: NextRequest) {
     console.error("Spotify OAuth callback failed", error);
 
     return NextResponse.redirect(
-      new URL("/?error=spotify_auth_failed", request.url)
+      new URL(
+        "/?error=spotify_auth_failed",
+        getAppUrl()
+      )
     );
   }
 }

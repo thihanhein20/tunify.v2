@@ -14,12 +14,16 @@ export const spotifyConfig = {
   ],
 };
 
-export function getSpotifyRedirectUri() {
+export function getAppUrl() {
   const appUrl = process.env.APP_URL;
 
   if (!appUrl) {
     throw new Error("APP_URL is not configured");
   }
 
-  return `${appUrl}/api/auth/callback/tunify`;
+  return appUrl;
+}
+
+export function getSpotifyRedirectUri() {
+  return `${getAppUrl()}/api/auth/callback/tunify`;
 }

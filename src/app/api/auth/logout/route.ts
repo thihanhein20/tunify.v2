@@ -1,13 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { getAppUrl } from "@/lib/tunify/config";
 
-export async function GET(request: NextRequest) {
+import { SPOTIFY_COOKIES } from "@/lib/tunify/cookies";
+
+export async function GET() {
   const response = NextResponse.redirect(
-    new URL("/", request.url)
+    new URL("/", getAppUrl())
   );
 
-  response.cookies.delete("spotify_access_token");
-  response.cookies.delete("spotify_refresh_token");
-  response.cookies.delete("spotify_oauth_state");
+  response.cookies.delete(SPOTIFY_COOKIES.accessToken);
+  response.cookies.delete(SPOTIFY_COOKIES.refreshToken);
+  response.cookies.delete(SPOTIFY_COOKIES.expiresAt);
+  response.cookies.delete(SPOTIFY_COOKIES.oauthState);
 
   return response;
 }
