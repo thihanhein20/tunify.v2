@@ -15,10 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-zinc-950 text-white">
+      <body className="min-h-screen bg-paper text-ink">
         <Navbar />
 
-        <main>{children}</main>
+        {children}
 
         <Footer />
       </body>

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { TrackPlayButton } from "@/components/player/TrackPlayButton";
 
 import type {
   SpotifySearchResponse,
@@ -42,11 +43,11 @@ export function SearchResults({
   if (!hasResults) {
     return (
       <div className="py-20 text-center">
-        <p className="text-lg text-zinc-400">
+        <p className="text-lg text-muted">
           No results found.
         </p>
 
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="mt-2 text-sm text-muted">
           Try another artist, song or album.
         </p>
       </div>
@@ -57,7 +58,7 @@ export function SearchResults({
     <div className="space-y-14">
       {tracks.length > 0 && (
         <section>
-          <h2 className="mb-5 text-2xl font-semibold">
+          <h2 className="mb-5 font-serif text-3xl font-normal">
             Tracks
           </h2>
 
@@ -75,7 +76,7 @@ export function SearchResults({
 
       {artists.length > 0 && (
         <section>
-          <h2 className="mb-5 text-2xl font-semibold">
+          <h2 className="mb-5 font-serif text-3xl font-normal">
             Artists
           </h2>
 
@@ -98,17 +99,17 @@ export function SearchResults({
                       alt={artist.name}
                       width={300}
                       height={300}
-                      className="aspect-square w-full rounded-full object-cover transition group-hover:scale-[1.02]"
+                      className="aspect-square w-full rounded-lg object-cover transition group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="aspect-square w-full rounded-full bg-white/10" />
+                    <div className="aspect-square w-full rounded-lg bg-line" />
                   )}
 
-                  <p className="mt-4 truncate font-medium text-white">
+                  <p className="mt-4 truncate font-medium text-ink">
                     {artist.name}
                   </p>
 
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-muted">
                     Artist
                   </p>
                 </a>
@@ -120,7 +121,7 @@ export function SearchResults({
 
       {albums.length > 0 && (
         <section>
-          <h2 className="mb-5 text-2xl font-semibold">
+          <h2 className="mb-5 font-serif text-3xl font-normal">
             Albums
           </h2>
 
@@ -146,14 +147,14 @@ export function SearchResults({
                       className="aspect-square w-full rounded-xl object-cover transition group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="aspect-square w-full rounded-xl bg-white/10" />
+                    <div className="aspect-square w-full rounded-xl bg-line" />
                   )}
 
-                  <p className="mt-4 truncate font-medium text-white">
+                  <p className="mt-4 truncate font-medium text-ink">
                     {album.name}
                   </p>
 
-                  <p className="truncate text-sm text-zinc-500">
+                  <p className="truncate text-sm text-muted">
                     {album.artists
                       .map((artist) => artist.name)
                       .join(", ")}
@@ -167,7 +168,7 @@ export function SearchResults({
 
       {playlists.length > 0 && (
         <section>
-          <h2 className="mb-5 text-2xl font-semibold">
+          <h2 className="mb-5 font-serif text-3xl font-normal">
             Playlists
           </h2>
 
@@ -193,14 +194,14 @@ export function SearchResults({
                       className="aspect-square w-full rounded-xl object-cover transition group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="aspect-square w-full rounded-xl bg-white/10" />
+                    <div className="aspect-square w-full rounded-xl bg-line" />
                   )}
 
-                  <p className="mt-4 truncate font-medium text-white">
+                  <p className="mt-4 truncate font-medium text-ink">
                     {playlist.name}
                   </p>
 
-                  <p className="truncate text-sm text-zinc-500">
+                  <p className="truncate text-sm text-muted">
                     {playlist.owner?.display_name
                       ? `By ${playlist.owner.display_name}`
                       : "Playlist"}
@@ -225,13 +226,12 @@ function TrackResult({
   const image = track.album.images?.[0]?.url;
 
   return (
-    <a
-      href={track.external_urls.spotify}
-      target="_blank"
-      rel="noreferrer"
-      className="group flex items-center gap-4 rounded-xl px-3 py-2 transition hover:bg-white/[0.06]"
+    <TrackPlayButton
+      uri={track.uri}
+      name={track.name}
+      className="track-row group flex items-center gap-4 px-3 py-3"
     >
-      <span className="w-5 text-sm text-zinc-600">
+      <span className="w-5 text-sm text-muted">
         {index + 1}
       </span>
 
@@ -244,28 +244,28 @@ function TrackResult({
           className="size-13 rounded-md object-cover"
         />
       ) : (
-        <div className="size-13 rounded-md bg-white/10" />
+        <div className="size-13 rounded-md bg-line" />
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-white">
+        <p className="truncate font-medium text-ink">
           {track.name}
         </p>
 
-        <p className="truncate text-sm text-zinc-500">
+        <p className="truncate text-sm text-muted">
           {track.artists
             .map((artist) => artist.name)
             .join(", ")}
         </p>
       </div>
 
-      <span className="hidden text-sm text-zinc-600 sm:block">
+      <span className="hidden text-sm text-muted sm:block">
         {track.album.name}
       </span>
 
-      <span className="w-12 text-right text-sm text-zinc-600">
+      <span className="w-12 text-right text-sm text-muted">
         {formatDuration(track.duration_ms)}
       </span>
-    </a>
+    </TrackPlayButton>
   );
 }

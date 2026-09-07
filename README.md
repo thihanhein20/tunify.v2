@@ -64,4 +64,4 @@ Run `npm start` to serve the production build locally.
 
 ## Current limitations
 
-Track links still open Spotify; the web player's `playTrack` action is not yet connected to track selection. Playlist pages and recently played UI are not implemented. Live Spotify authentication and playback require manual verification with an authorized account.
+Top Tracks and search track results start playback in the shared web player. The `(music)` route group keeps the player mounted between dashboard and search navigation. Playlist pages and recently played UI are not implemented. Live Spotify authentication and playback require manual verification with an authorized account.

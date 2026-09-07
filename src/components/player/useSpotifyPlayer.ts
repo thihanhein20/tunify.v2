@@ -21,54 +21,68 @@ export function useSpotifyPlayer() {
   const [error, setError] =
     useState<string | null>(null);
 
+  const playbackRequestRef = useRef(false);
+  const [pendingTrackUri, setPendingTrackUri] = useState<string | null>(null);
+
   const playTrack = useCallback(
     async (uri: string) => {
       const player = playerRef.current;
-
-      if (!player || !deviceId) {
-        throw new Error("Tunify player is not ready");
+      if (playbackRequestRef.current) return;
+      if (!player || !deviceId || !isReady) {
+        setError("Tunify player is not ready. Please wait for it to connect.");
+        return;
       }
 
-      // Important for browser autoplay restrictions.
-      await player.activateElement();
+      playbackRequestRef.current = true;
+      setPendingTrackUri(uri);
+      setError(null);
+      try {
+        // Important for browser autoplay restrictions.
+        await player.activateElement();
 
-      const transferResponse = await fetch(
-        "/api/player/transfer",
-        {
+        const transferResponse = await fetch(
+          "/api/player/transfer",
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              deviceId,
+            }),
+          }
+        );
+
+        if (!transferResponse.ok) {
+          throw new Error(
+            "Unable to transfer Spotify playback"
+          );
+        }
+
+        const playResponse = await fetch("/api/player/play", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             deviceId,
+            uri,
           }),
+        });
+
+        if (!playResponse.ok) {
+          throw new Error(
+            "Unable to start Spotify playback"
+          );
         }
-      );
-
-      if (!transferResponse.ok) {
-        throw new Error(
-          "Unable to transfer Spotify playback"
-        );
-      }
-
-      const playResponse = await fetch("/api/player/play", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          deviceId,
-          uri,
-        }),
-      });
-
-      if (!playResponse.ok) {
-        throw new Error(
-          "Unable to start Spotify playback"
-        );
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Unable to start Spotify playback");
+      } finally {
+        playbackRequestRef.current = false;
+        setPendingTrackUri(null);
       }
     },
-    [deviceId]
+    [deviceId, isReady]
   );
 
   const getAccessToken = useCallback(async () => {
@@ -147,6 +161,7 @@ export function useSpotifyPlayer() {
           );
 
           setIsReady(false);
+          setDeviceId(null);
         }
       );
 
@@ -239,5 +254,6 @@ export function useSpotifyPlayer() {
     isReady,
     error,
     playTrack,
+    pendingTrackUri,
   };
 }

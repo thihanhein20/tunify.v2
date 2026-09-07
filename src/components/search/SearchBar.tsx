@@ -70,7 +70,7 @@ export function SearchBar({
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-zinc-500"
+          className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted"
         >
           <circle
             cx="11"
@@ -94,7 +94,7 @@ export function SearchBar({
           }
           placeholder="Search tracks, artists, albums..."
           autoComplete="off"
-          className="w-full rounded-2xl border border-white/10 bg-white/[0.05] py-4 pl-12 pr-5 text-white outline-none transition placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.08]"
+          className="w-full rounded-lg border border-line bg-surface py-4 pl-12 pr-5 text-ink outline-none transition placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
       </div>
     </form>

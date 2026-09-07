@@ -1,91 +1,20 @@
+import type { CSSProperties } from "react";
+
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="mx-auto flex min-h-[720px] max-w-7xl flex-col items-center justify-center px-6 text-center">
-        <div className="mb-6 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400">
-          Your music. Your listening story.
-        </div>
-
-        <h1 className="max-w-4xl text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
-          Discover what your
-          <span className="block text-green-400">
-            Spotify says about you.
-          </span>
-        </h1>
-
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-400">
-          Tunify turns your Spotify listening data into a cleaner,
-          smarter way to explore your favourite tracks, artists and
-          playlists.
-        </p>
-
-        <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <a
-            href="/api/auth/login"
-            className="rounded-full bg-green-400 px-7 py-3.5 font-semibold text-black transition hover:bg-green-300"
-          >
-            Connect Spotify
-          </a>
-
-          <a
-            href="#features"
-            className="rounded-full border border-white/10 px-7 py-3.5 font-medium text-white transition hover:bg-white/5"
-          >
-            Explore features
-          </a>
-        </div>
-
-        <p className="mt-5 text-sm text-zinc-500">
-          Secure authentication through Spotify.
-        </p>
-
-        <div className="mt-16 w-full max-w-5xl rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl">
-          <div className="rounded-2xl border border-white/10 bg-zinc-900 p-8">
-            <div className="grid gap-6 md:grid-cols-3">
-              <PreviewCard
-                label="Top Artist"
-                value="Your favourite artist"
-              />
-
-              <PreviewCard
-                label="Top Track"
-                value="Your most played track"
-              />
-
-              <PreviewCard
-                label="Listening"
-                value="Your music insights"
-              />
-            </div>
-          </div>
-        </div>
+    <section className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.15fr_1fr] lg:gap-20 lg:py-24">
+      <div>
+        <p className="eyebrow mb-7">A little more you. A lot more music.</p>
+        <h1 className="display-title mb-7">Good music.<br />Great <em className="text-accent">company.</em></h1>
+        <p className="mb-9 max-w-md text-lg text-muted">The tracks you come back to. The artists you can’t get enough of. A space for your own kind of listening.</p>
+        <a href="/api/auth/login" className="primary-button">Find your rotation <span aria-hidden="true">↗</span></a>
+        <p className="mt-4 text-sm text-muted">Bring your Spotify account. Make yourself at home.</p>
+      </div>
+      <div className="hero-art" aria-label="Abstract sound wave in orange and olive">
+        <div className="flex items-center justify-between pl-12 text-xs font-semibold uppercase tracking-[.17em]"><span>The Tunify frequency</span><span>01 / ∞</span></div>
+        <div className="frequency" aria-hidden="true">{[18,30,46,63,82,96,72,50,36,58,85,100,79,54,33,20].map((height,index)=><span key={index} style={{"--bar": `${height}%`} as CSSProperties} />)}</div>
+        <div className="flex items-end justify-between border-t border-ink/20 pt-5"><p className="m-0 font-serif text-3xl italic">In your element.</p><span className="text-3xl" aria-hidden="true">↗</span></div>
       </div>
     </section>
-  );
-}
-
-type PreviewCardProps = {
-  label: string;
-  value: string;
-};
-
-function PreviewCard({
-  label,
-  value,
-}: PreviewCardProps) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-left">
-      <p className="text-sm text-zinc-500">
-        {label}
-      </p>
-
-      <p className="mt-3 font-medium text-zinc-200">
-        {value}
-      </p>
-
-      <div className="mt-6 h-2 rounded-full bg-white/10">
-        <div className="h-2 w-2/3 rounded-full bg-green-400" />
-      </div>
-    </div>
   );
 }

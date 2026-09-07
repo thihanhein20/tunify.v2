@@ -1,38 +1,17 @@
 import Link from "next/link";
+import { hasSpotifySession } from "@/lib/spotify/auth/session";
 
-export function Navbar() {
+export async function Navbar() {
+  const connected = await hasSpotifySession();
   return (
-    <header className="border-b border-white/10">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Link
-          href="/"
-          className="text-xl font-semibold tracking-tight"
-        >
-          Tunify
+    <header className="border-b border-line">
+      <div className="mx-auto flex min-h-22 max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+        <Link href={connected ? "/dashboard" : "/"} className="brand" aria-label="Tunify home">
+          <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>tunify<span className="text-accent">.</span>
         </Link>
-
-        <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
-          <a
-            href="#features"
-            className="transition hover:text-white"
-          >
-            Features
-          </a>
-
-          <a
-            href="#how-it-works"
-            className="transition hover:text-white"
-          >
-            How it works
-          </a>
+        <nav aria-label="Main navigation" className="flex items-center gap-5 text-sm font-medium sm:gap-9">
+          {connected ? <><Link href="/dashboard" className="hover:text-accent">Your rotation</Link><Link href="/search" className="hover:text-accent">Discover ↗</Link></> : <><Link href="/#features" className="hidden hover:text-accent sm:block">The experience</Link><a href="/api/auth/login" className="primary-button">Connect Spotify <span aria-hidden="true">↗</span></a></>}
         </nav>
-
-        <a
-          href="/api/auth/login"
-          className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-        >
-          Connect Spotify
-        </a>
       </div>
     </header>
   );

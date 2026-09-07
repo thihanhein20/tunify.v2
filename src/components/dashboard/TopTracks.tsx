@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { TrackPlayButton } from "@/components/player/TrackPlayButton";
 
 import type { SpotifyTrack } from "@/lib/spotify/types";
 
@@ -8,29 +9,28 @@ type TopTracksProps = {
 
 export function TopTracks({ tracks }: TopTracksProps) {
   return (
-    <section>
+    <section className="music-panel min-w-0">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="text-sm text-zinc-500">Your favourites</p>
-          <h2 className="text-2xl font-semibold text-white">
+          <p className="eyebrow">The ones on repeat</p>
+          <h2 className="font-serif text-3xl font-normal text-ink">
             Top Tracks
           </h2>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-1">
         {tracks.map((track, index) => {
           const image = track.album.images?.[0]?.url;
 
           return (
-            <a
+            <TrackPlayButton
               key={track.id}
-              href={track.external_urls.spotify}
-              target="_blank"
-              rel="noreferrer"
-              className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:bg-white/[0.06]"
+              uri={track.uri}
+              name={track.name}
+              className="track-row group flex items-center gap-4 p-3"
             >
-              <span className="w-6 text-sm text-zinc-500">
+              <span className="w-6 shrink-0 font-mono text-sm text-muted">
                 {index + 1}
               </span>
 
@@ -45,19 +45,19 @@ export function TopTracks({ tracks }: TopTracksProps) {
               )}
 
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-white">
+                <p className="truncate font-medium text-ink">
                   {track.name}
                 </p>
 
-                <p className="truncate text-sm text-zinc-500">
+                <p className="truncate text-sm text-muted">
                   {track.artists.map((artist) => artist.name).join(", ")}
                 </p>
               </div>
 
-              <span className="text-sm text-zinc-600 transition group-hover:text-zinc-300">
-                Spotify
+              <span className="text-sm text-muted transition group-hover:text-muted">
+                ▶ Play
               </span>
-            </a>
+            </TrackPlayButton>
           );
         })}
       </div>

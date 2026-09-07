@@ -36,8 +36,8 @@ export function TunifyPlayer() {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-zinc-950/95 px-6 py-4 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+    <div className="player-shell">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 sm:gap-6">
 
         {/* Current track */}
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -54,11 +54,11 @@ export function TunifyPlayer() {
               )}
 
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">
+                <p className="truncate text-sm font-medium text-ink">
                   {track.name}
                 </p>
 
-                <p className="truncate text-xs text-zinc-400">
+                <p className="truncate text-xs text-muted">
                   {track.artists
                     .map((artist) => artist.name)
                     .join(", ")}
@@ -67,11 +67,11 @@ export function TunifyPlayer() {
             </>
           ) : (
             <div>
-              <p className="text-sm font-medium text-white">
-                Tunify Web Player
+              <p className="text-sm font-medium text-ink">
+                Your listening room
               </p>
 
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted">
                 {isReady
                   ? "Choose a track to start listening"
                   : "Connecting to Spotify..."}
@@ -81,43 +81,43 @@ export function TunifyPlayer() {
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-5">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-4">
           <button
             onClick={handlePrevious}
-            disabled={!track}
+            disabled={!track || !isReady}
             aria-label="Previous track"
-            className="text-zinc-400 transition hover:text-white disabled:opacity-30"
+            className="text-muted transition hover:text-ink disabled:opacity-30"
           >
             ⏮
           </button>
 
           <button
             onClick={handleTogglePlay}
-            disabled={!track}
+            disabled={!track || !isReady}
             aria-label={isPaused ? "Play" : "Pause"}
-            className="flex size-10 items-center justify-center rounded-full bg-white text-lg text-black transition hover:scale-105 disabled:opacity-30"
+            className="flex size-10 items-center justify-center rounded-full bg-[#edc26e] text-lg text-[#252820] transition hover:scale-105 disabled:opacity-30"
           >
             {isPaused ? "▶" : "⏸"}
           </button>
 
           <button
             onClick={handleNext}
-            disabled={!track}
+            disabled={!track || !isReady}
             aria-label="Next track"
-            className="text-zinc-400 transition hover:text-white disabled:opacity-30"
+            className="text-muted transition hover:text-ink disabled:opacity-30"
           >
             ⏭
           </button>
         </div>
 
         {/* Connection */}
-        <div className="flex flex-1 justify-end">
+        <div className="player-status flex justify-end sm:max-w-52">
           {error ? (
-            <p className="text-xs text-red-400">
+            <p role="alert" className="text-xs text-[#ffb4a1]">
               {error}
             </p>
           ) : (
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-muted">
               {isReady ? "Connected" : "Connecting..."}
             </span>
           )}
