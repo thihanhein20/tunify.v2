@@ -1,0 +1,9 @@
+:root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; color: #182821; background: #f6f7f2; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 760px; margin: 0 auto; padding: clamp(48px, 12vw, 120px) 24px; }
+h1 { max-width: 650px; font-size: clamp(2.4rem, 7vw, 4.3rem); line-height: 1.08; letter-spacing: -0.045em; margin: 20px 0; }
+p { font-size: 1.125rem; line-height: 1.6; }
+.eyebrow { color: #286245; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+aside { margin-top: 48px; padding: 24px; border: 1px solid #ccd8ce; border-radius: 12px; background: #fff; }
+aside p { margin-bottom: 0; }
