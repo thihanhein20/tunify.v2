@@ -17,9 +17,11 @@ Open http://127.0.0.1:3000. The skeleton needs no Spotify credentials.
 npm run check
 ```
 
-This runs ESLint, TypeScript, and a production build. `npm run build` exports static files to `out/`; deployment needs only a static file host, not a Next.js application server.
+This runs ESLint, TypeScript, and a production build. `npm run build` produces the Next.js server build in `.next/`. Run `npm start` to serve it locally at http://127.0.0.1:3000. Deployment requires a Node.js server or a Next.js-compatible hosting platform, with Spotify secrets configured in its server environment; static-only hosting is no longer supported.
 
-## Spotify setup (for the implementation phase)
+The application now uses server-side Spotify Authorization Code OAuth and HTTP-only cookies. Static export was removed because authentication route handlers must run for each request. The original client-only design notes below are historical and do not describe the current authentication implementation.
+
+## Original client-only Spotify setup (historical)
 
 1. Create an app in the Spotify Developer Dashboard.
 2. Register the exact redirect URI `http://127.0.0.1:3000/`.
@@ -29,7 +31,7 @@ This runs ESLint, TypeScript, and a production build. `npm run build` exports st
 
 Spotify development mode currently requires the app owner to have Premium and new apps support up to five authorised users. `localhost` is not an allowed redirect URI; use the loopback IP above. A hosted version needs an HTTPS redirect URI and a rebuild with the matching public configuration.
 
-## Proposed design
+## Original client-only design (historical)
 
 Use the App Router with static export, client components for interactive behaviour, native `fetch`, React state, and plain CSS. The root layout provides build-time HTML and metadata; no API routes, Server Actions, database, or runtime backend are needed. Browser-only APIs must run in effects or event handlers because Next.js still prerenders client components during the build.
 
