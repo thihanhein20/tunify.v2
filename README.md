@@ -1,117 +1,69 @@
 # Tunify
 
-A small Next.js + TypeScript Spotify search assessment. **Currently a skeleton:** the landing page runs; authentication and search are proposed, not implemented.
+A client-only Spotify song and artist search app built with Next.js, React, TypeScript, and Tailwind CSS. The site exports to static files: authentication and search run in the browser and call Spotify directly. No app backend, database, or client secret is required.
 
-## Run
+## Run locally
 
-Use Node.js 22 or newer and npm.
+1. Install Node.js 22 or newer.
+2. Run `npm ci`.
+3. Copy `.env.example` to `.env.local` and enter your Spotify app's **client ID**.
+4. Register **`http://127.0.0.1:3000/`** as the redirect URI in the Spotify Developer Dashboard. The root page completes PKCE in the browser. Add the reviewer's account to the app's authorized users if required by your app's development-mode settings.
+5. Run `npm run dev` and open http://127.0.0.1:3000.
+6. Select **Connect Spotify**, approve access, and search for a song or artist.
 
-```sh
-npm ci
-npm run dev
+```dotenv
+NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_client_id
+NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/
 ```
 
-Open http://127.0.0.1:3000. The skeleton needs no Spotify credentials.
+Both settings are public. Never put a client secret in a `NEXT_PUBLIC_` variable. The old `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_CLIENT_ID`, and `APP_URL` variables are no longer used. Restart development or rebuild after changing configuration. For hosting, set an HTTPS root redirect URI matching the hosted site and register that exact URL with Spotify.
+
+## Check and preview
 
 ```sh
 npm run check
+npm start
 ```
 
-This runs ESLint, TypeScript, and a production build. `npm run build` produces the Next.js server build in `.next/`. Run `npm start` to serve it locally at http://127.0.0.1:3000. Deployment requires a Node.js server or a Next.js-compatible hosting platform, with Spotify secrets configured in its server environment; static-only hosting is no longer supported.
+`check` runs lint, TypeScript, mocked protocol tests, and the production build. `npm start` serves the generated `out/` directory at http://127.0.0.1:3000; stop the development server first to free that port. The preview server only serves static files and is not an application backend. Deploy the contents of `out/` to a static host.
 
-The application now uses server-side Spotify Authorization Code OAuth and HTTP-only cookies. Static export was removed because authentication route handlers must run for each request. The original client-only design notes below are historical and do not describe the current authentication implementation.
+Individual checks: `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. The build uses Next.js's webpack option because Turbopack's local port requirements were blocked in the development environment.
 
-## Original client-only Spotify setup (historical)
+## How it works
 
-1. Create an app in the Spotify Developer Dashboard.
-2. Register the exact redirect URI `http://127.0.0.1:3000/`.
-3. Copy `.env.example` to `.env.local` and enter the client ID. These values are intentionally public; never add a client secret.
-4. Add the reviewer's Spotify account to the app's authorised users, or let them configure their own client ID.
-5. Restart the development server after changing configuration.
+- **Login:** Tunify checks that the current origin matches the configured redirect origin before creating PKCE data. Returning via browser Back resets the connecting controls and rechecks the session. The browser creates a random verifier and OAuth state, hashes the verifier using SHA-256, and sends the challenge to Spotify. After redirect, it validates state and exchanges the code using the verifier and public client ID. Callback exchange is shared during React effect replay.
+- **Session:** tokens live in tab-scoped `sessionStorage` for reload continuity. This storage is JavaScript-readable, not equivalent to HTTP-only cookies. Logout clears Tunify's session; it does not log the user out of Spotify itself. Expiring tokens are refreshed once per concurrent batch; rotated refresh tokens are saved. Logout prevents an in-flight refresh from restoring the session.
+- **Search:** after 350 ms without typing, the browser requests up to ten songs and ten artists. Superseded requests are aborted and stale results ignored. The market is currently Australia (`AU`). No personal-data scopes are requested.
+- **Errors:** loading and empty states are visible. Login and search failures use accessible inline alerts with reconnect or retry actions. Requests time out after 15 seconds, including response-body reads. Token-endpoint rate limits enforce a cooldown using `Retry-After`. Temporary refresh failures preserve the session; rejected refresh credentials clear it and prompt reconnection. A 401 triggers one refresh/retry, a 403 explains account access, and a 429 respects `Retry-After` before allowing another request.
+- **Listening:** results link to Spotify. Playback, saved favourites, personal dashboards, and playlist search are outside this focused submission.
 
-Spotify development mode currently requires the app owner to have Premium and new apps support up to five authorised users. `localhost` is not an allowed redirect URI; use the loopback IP above. A hosted version needs an HTTPS redirect URI and a rebuild with the matching public configuration.
-
-## Original client-only design (historical)
-
-Use the App Router with static export, client components for interactive behaviour, native `fetch`, React state, and plain CSS. The root layout provides build-time HTML and metadata; no API routes, Server Actions, database, or runtime backend are needed. Browser-only APIs must run in effects or event handlers because Next.js still prerenders client components during the build.
-
-Proposed files, added only when needed:
+## Structure
 
 ```text
 src/
-  app/
-    layout.tsx           # HTML shell and metadata (exists)
-    page.tsx             # Page composition (placeholder exists)
-    globals.css          # Shared styles (exists)
+  app/                       Static page, layout, and shared styles
   components/
-    search-form.tsx      # Labelled input, type selector, submit
-    search-results.tsx   # Artist/track list and empty state
-  hooks/
-    use-spotify.ts       # Session and authentication lifecycle
-    use-search.ts        # Search state and cancellation
+    auth/SpotifySession.tsx  Browser session context and connect button
+    search/SearchBar.tsx     Debounced input and request lifecycle
+    search/SearchResults.tsx Song and artist results
+    layout/                  Navigation and footer
   lib/spotify/
-    auth.ts              # PKCE, callback validation, token refresh
-    api.ts               # Typed search request and HTTP errors
-    types.ts             # Only response fields the UI uses
+    auth/session.ts          PKCE, session storage, callback, refresh, logout
+    api/search.ts            Direct Spotify search and HTTP errors
+    config.ts                Public configuration
+    types/index.ts           API response types
+scripts/preview.mjs           Local static-file preview
+tests/spotify.test.mjs       Mocked protocol checks
 ```
 
-Keep session state in the page through a hook and pass values to children. No global state library, Spotify SDK, or general-purpose API abstraction is necessary. Separate protocol logic from rendering so both remain explainable and testable.
+## Before submitting
 
-## Authentication proposal
+Manually verify login, denied consent, search, no results, logout, reload, keyboard navigation, mobile layout, and the reviewer's authorized account. Automated tests do not call live Spotify or prove account eligibility.
 
-Use Authorization Code with PKCE (S256). Client Credentials requires a secret and is unsuitable for a browser-only application; do not use the deprecated implicit flow.
-
-1. Generate a random verifier and independent OAuth state using Web Crypto. Save them temporarily in sessionStorage and redirect to Spotify with the hashed challenge.
-2. Return to the same root page; read the callback URL in a client effect. Handle denied consent and validate the returned state against the saved value before exchanging the code.
-3. Exchange the code directly with Spotify using the verifier and public client ID. Ensure callback processing is single-flight, including during React development effect replay.
-4. Remove callback parameters from the URL and clear temporary state/verifier after processing. Request no additional user-data scopes for catalog search.
-5. Keep tokens and expiry in tab-scoped sessionStorage for reload continuity. Refresh before expiry; on a 401 refresh and retry at most once. Deduplicate refreshes, replace rotated refresh tokens, and return to sign-in if refresh fails.
-6. Disconnect clears this app's local session; it does not log the user out of Spotify globally.
-
-sessionStorage is readable by JavaScript, so it is a pragmatic persistence choice, not protection against XSS. Avoid raw HTML insertion and unnecessary third-party scripts. Memory-only tokens would reduce persistence but require sign-in after reload. A backend with HttpOnly cookies would change the client-only requirement.
-
-## Minimum submission
-
-- Spotify connect/disconnect.
-- One labelled search field, Artists/Songs selector, Enter/button submission, and whitespace validation.
-- Up to 10 results per request: image, artist or song name, track artist/album where applicable, and a link back to Spotify. Preserve API ordering and handle absent images.
-- Responsive layout, visible keyboard focus, accessible status announcements, and helpful recoverable errors.
-- Clear setup instructions and a short explanation of AI-assisted work and the design decisions understood by the author.
-
-“Favourite” is interpreted as music the user wants to find; saved favourites, playlists, playback, infinite scrolling, and recommendation features are outside the proposed scope. Optional pagination can come later. Explicit submission saves quota and is simpler than debounced autocomplete.
-
-## States and request behaviour
-
-| State | Behaviour |
-| --- | --- |
-| Missing configuration | Explain which public configuration is missing |
-| Disconnected / connecting | Sign-in action / progress; prevent duplicate actions |
-| Consent denied or invalid callback | Explain failure and offer a fresh sign-in |
-| Ready, no search yet | Prompt the user to search |
-| Blank query | Inline validation; no request |
-| Searching | Announce loading; prevent duplicate submissions |
-| Success / zero results | Show list / suggest another spelling or query |
-| Network or 5xx error | Preserve input and offer retry |
-| Expired session | Refresh once; reconnect if unsuccessful |
-| 403 | Explain possible development-mode account access issue |
-| 429 | Honour Retry-After when supplied; no automatic retry loop |
-| Missing artwork | Stable visual placeholder |
-
-Cancel superseded requests with AbortController and ignore stale completions. Cancellation is not a user-visible failure. Keep results associated with the submitted query and type rather than the text currently being edited.
-
-## Testing proposal
-
-For the skeleton, lint, typecheck, and static build are enough. Add Vitest when real logic exists; mock native fetch directly rather than adding a network mocking library initially.
-
-Prioritise PKCE challenge generation against a known vector, rejected callback state, one-time callback processing, token refresh/retry boundaries, URL encoding, blank input, stale requests, and 429 handling. Add React Testing Library and a DOM environment only for a small set of behavioural UI tests (submit, loading, results, empty and error/retry). Avoid snapshot-heavy or implementation-mirroring tests.
-
-Manually verify the real Spotify login, consent denial, reload, disconnect, keyboard navigation, mobile layout, missing images, and an authorised reviewer account. Automated tests should use fixtures, not real tokens or live Spotify requests. A full browser test framework is optional for this scope.
+Provide the actual AI conversation export alongside the repository, with credentials and personal information removed. This README is a design explanation, not a substitute for the requested AI transcript. AI assisted with implementation and refactoring; review the code and describe the decisions you understand in your own submission.
 
 ## References
 
-- [Next.js static exports](https://nextjs.org/docs/app/guides/static-exports)
-- [Spotify PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow)
-- [Spotify redirect URIs](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri)
-- [Spotify development-mode changes and search limits](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide)
-
-Design reviewed against official documentation on 7 September 2026.
+- [Spotify PKCE flow](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow)
+- [Refreshing Spotify tokens](https://developer.spotify.com/documentation/web-api/tutorials/refreshing-tokens)
+- [Spotify search](https://developer.spotify.com/documentation/web-api/reference/search)
