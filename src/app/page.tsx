@@ -1,15 +1,9 @@
-import { Hero } from "@/components/landing/Hero";
-import { Features } from "@/components/landing/Features";
-import { HowItWorks } from "@/components/landing/HowItWorks";
-import { CTA } from "@/components/landing/CTA";
+import { SearchBar } from "@/components/search/SearchBar";
 
 export default function Home() {
   return (
-    <>
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <CTA />
-    </>
+    <main className="min-h-[calc(100svh-180px)]">
+      <SearchBar />
+    </main>
   );
 }

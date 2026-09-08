@@ -16,6 +16,9 @@ button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:not(:disabled), a { cursor: pointer; }
 :focus-visible { outline: 2px solid #b44724; outline-offset: 5px; }
+/* The search wrapper provides the focus indicator for this input. */
+#spotify-search:focus,
+#spotify-search:focus-visible { outline: none; outline-offset: 0; }
 ::selection { background: #efbd73; color: #252820; }
 h1, h2, h3, p { margin-top: 0; }
 h1, h2 { letter-spacing: -.045em; }
@@ -25,29 +28,11 @@ p { line-height: 1.65; }
 .brand-mark i { display: block; width: 5px; border-radius: 4px; background: #b44724; height: 13px; }
 .brand-mark i:nth-child(2) { height: 27px; }
 .brand-mark i:nth-child(3) { height: 20px; }
-.eyebrow { color: #b44724; font-size: 12px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; }
 .primary-button, .secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: 18px; min-height: 48px; padding: 12px 22px; border-radius: 8px; font-size: 14px; font-weight: 650; transition: background .2s, transform .2s; }
 .primary-button { background: #b44724; color: #fffaf0; }
 .primary-button:hover { background: #913519; transform: translateY(-2px); }
 .secondary-button { border: 1px solid #c7c8b9; color: #252820; }
 .secondary-button:hover { background: #e9e8dc; }
-.display-title { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: clamp(3.6rem, 7.5vw, 7rem); line-height: .99; letter-spacing: -.065em; }
-.hero-art { background: #d7ddbc; position: relative; min-height: 440px; overflow: hidden; border-radius: 120px 12px 12px 12px; padding: 34px; display: flex; flex-direction: column; justify-content: space-between; }
-.frequency { display: flex; align-items: center; justify-content: center; gap: 9px; height: 255px; transform: rotate(-12deg); }
-.frequency span { flex: 1; max-width: 18px; height: var(--bar); background: #414c33; border-radius: 20px; }
-.frequency span:nth-child(3n) { background: #b44724; }
-.section-number { font-family: Georgia, serif; font-size: 36px; color: #b44724; }
-.music-panel { border-top: 1px solid #c9ccba; padding-top: 24px; }
 .track-row { border: 1px solid transparent; background: transparent; border-bottom-color: #dadbce; border-radius: 6px; transition: background .2s, border-color .2s; }
 .track-row:hover { background: #fffaf0; border-color: #d8d9c9; }
-.player-shell { position: fixed; left: 24px; right: 24px; bottom: 18px; z-index: 50; max-width: 1232px; margin: auto; background: #293126; color: #fffaf0; border: 1px solid #47513e; border-radius: 16px; padding: 16px 24px; box-shadow: 0 12px 40px #202a2526; }
-.player-shell .text-ink { color: #fffaf0; }
-.player-shell .text-muted { color: #c3c8b9; }
-.player-shell button { min-width: 40px; min-height: 40px; }
-@media (max-width: 640px) {
-  .hero-art { min-height: 330px; border-top-left-radius: 70px; padding: 24px; }
-  .frequency { height: 200px; gap: 6px; }
-  .player-shell { left: 10px; right: 10px; bottom: 10px; padding: 12px; }
-  .player-status { position: absolute; bottom: 100%; right: 8px; max-width: 80vw; padding: 6px 10px; background: #293126; border-radius: 6px 6px 0 0; }
-}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }

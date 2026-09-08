@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { TrackPlayButton } from "@/components/player/TrackPlayButton";
 
 import type {
   SpotifySearchResponse,
@@ -27,18 +26,7 @@ export function SearchResults({
 }: SearchResultsProps) {
   const tracks = results.tracks?.items ?? [];
   const artists = results.artists?.items ?? [];
-  const albums = results.albums?.items ?? [];
-
-  const playlists =
-    results.playlists?.items.filter(
-      (playlist) => playlist !== null
-    ) ?? [];
-
-  const hasResults =
-    tracks.length > 0 ||
-    artists.length > 0 ||
-    albums.length > 0 ||
-    playlists.length > 0;
+  const hasResults = tracks.length > 0 || artists.length > 0;
 
   if (!hasResults) {
     return (
@@ -48,7 +36,7 @@ export function SearchResults({
         </p>
 
         <p className="mt-2 text-sm text-muted">
-          Try another artist, song or album.
+          Try another artist or song.
         </p>
       </div>
     );
@@ -99,6 +87,7 @@ export function SearchResults({
                       alt={artist.name}
                       width={300}
                       height={300}
+                      loading="eager"
                       className="aspect-square w-full rounded-lg object-cover transition group-hover:scale-[1.02]"
                     />
                   ) : (
@@ -119,99 +108,7 @@ export function SearchResults({
         </section>
       )}
 
-      {albums.length > 0 && (
-        <section>
-          <h2 className="mb-5 font-serif text-3xl font-normal">
-            Albums
-          </h2>
 
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
-            {albums.map((album) => {
-              const image =
-                album.images?.[0]?.url;
-
-              return (
-                <a
-                  key={album.id}
-                  href={album.external_urls.spotify}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group min-w-0"
-                >
-                  {image ? (
-                    <Image
-                      src={image}
-                      alt={album.name}
-                      width={300}
-                      height={300}
-                      className="aspect-square w-full rounded-xl object-cover transition group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div className="aspect-square w-full rounded-xl bg-line" />
-                  )}
-
-                  <p className="mt-4 truncate font-medium text-ink">
-                    {album.name}
-                  </p>
-
-                  <p className="truncate text-sm text-muted">
-                    {album.artists
-                      .map((artist) => artist.name)
-                      .join(", ")}
-                  </p>
-                </a>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {playlists.length > 0 && (
-        <section>
-          <h2 className="mb-5 font-serif text-3xl font-normal">
-            Playlists
-          </h2>
-
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
-            {playlists.map((playlist) => {
-              const image =
-                playlist.images?.[0]?.url;
-
-              return (
-                <a
-                  key={playlist.id}
-                  href={playlist.external_urls.spotify}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group min-w-0"
-                >
-                  {image ? (
-                    <Image
-                      src={image}
-                      alt={playlist.name}
-                      width={300}
-                      height={300}
-                      className="aspect-square w-full rounded-xl object-cover transition group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div className="aspect-square w-full rounded-xl bg-line" />
-                  )}
-
-                  <p className="mt-4 truncate font-medium text-ink">
-                    {playlist.name}
-                  </p>
-
-                  <p className="truncate text-sm text-muted">
-                    {playlist.owner?.display_name
-                      ? `By ${playlist.owner.display_name}`
-                      : "Playlist"}
-                  </p>
-                </a>
-              );
-            })}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
@@ -226,9 +123,11 @@ function TrackResult({
   const image = track.album.images?.[0]?.url;
 
   return (
-    <TrackPlayButton
-      uri={track.uri}
-      name={track.name}
+    <a
+      href={track.external_urls.spotify}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Open ${track.name} in Spotify (new tab)`}
       className="track-row group flex items-center gap-4 px-3 py-3"
     >
       <span className="w-5 text-sm text-muted">
@@ -266,6 +165,6 @@ function TrackResult({
       <span className="w-12 text-right text-sm text-muted">
         {formatDuration(track.duration_ms)}
       </span>
-    </TrackPlayButton>
+    </a>
   );
 }
