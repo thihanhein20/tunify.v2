@@ -147,6 +147,34 @@ See [Vercel's framework environment variable documentation](https://vercel.com/d
 | Session cannot be renewed | Connect Spotify again. Temporary network failures preserve the session. |
 | Production preview fails | Run `npm run build` first and stop the development server so port 3000 is free. |
 
+## Architecture
+
+Expand a diagram below; select the image to view it at full size.
+
+<details>
+<summary><strong>Current architecture — implemented</strong></summary>
+
+The browser handles PKCE authentication, session storage, and debounced Spotify searches. Vercel serves the static app. Authorization returns a code; token exchange and refresh are separate browser requests.
+
+<a href="readme_images/simple_arch.png">
+  <img src="readme_images/simple_arch.png" alt="Current Tunify architecture: browser app, sessionStorage, Spotify Accounts, and Spotify Web API" width="900">
+</a>
+
+</details>
+
+<details>
+<summary><strong>Future architecture — proposed</strong></summary>
+
+A backend could move Spotify tokens into server-side sessions, with Redis sharing sessions and rate limits across API instances. This adds hosting and operational complexity and is not part of the current implementation.
+
+<a href="readme_images/future_imp.png">
+  <img src="readme_images/future_imp.png" alt="Proposed Tunify architecture with a load balancer, multiple API instances, Redis, and Spotify services" width="900">
+</a>
+
+Each API instance would access Redis and both Spotify services independently. The authorization callback travels through the browser to the backend; API instances do not need to call each other. Additional instances do not increase Spotify's quota.
+
+</details>
+
 ## Project structure
 
 ```text
