@@ -1,69 +1,181 @@
 # Tunify
 
-A client-only Spotify song and artist search app built with Next.js, React, TypeScript, and Tailwind CSS. The site exports to static files: authentication and search run in the browser and call Spotify directly. No app backend, database, or client secret is required.
+Find your next favourite song or artist with a simple, responsive Spotify search.
 
-## Run locally
+**[Open the live demo](https://tunifyapp.vercel.app/)**
 
-1. Install Node.js 22 or newer.
-2. Run `npm ci`.
-3. Copy `.env.example` to `.env.local` and enter your Spotify app's **client ID**.
-4. Register **`http://127.0.0.1:3000/`** as the redirect URI in the Spotify Developer Dashboard. The root page completes PKCE in the browser. Add the reviewer's account to the app's authorized users if required by your app's development-mode settings.
-5. Run `npm run dev` and open http://127.0.0.1:3000.
-6. Select **Connect Spotify**, approve access, and search for a song or artist.
+Built with Next.js, React, TypeScript, and Tailwind CSS. Tunify exports to static files: authentication and search run entirely in the browser, with no application backend, database, or Spotify client secret.
+
+## Features
+
+- Search songs and artists as you type, with a 350 ms debounce.
+- View artwork and open results in Spotify.
+- Connect through Spotify's Authorization Code with PKCE flow.
+- Clear loading, empty, and error states with retry or reconnect actions.
+- Cancel outdated searches, refresh expired sessions, and respect rate limits.
+
+Spotify sign-in is required for this app's search. Playback and library changes are outside its scope.
+
+## Try the demo
+
+Visit [tunifyapp.vercel.app](https://tunifyapp.vercel.app/), select **Connect Spotify**, then search for a song or artist.
+
+**Reviewer access:** the Spotify app runs in development mode, so the app owner must add your Spotify account to its allowed users before you can search. A successful Spotify login alone does not guarantee API access. To run your own copy, follow the setup below.
+
+## 1. Create a Spotify developer app
+
+You need Node.js **22 or newer**, npm, and a Spotify account. Spotify currently requires the **app owner to have Premium** for a development-mode app to function. Development-mode apps support up to **five authorized users**. See [Spotify's development-mode requirements](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
+
+1. Sign in to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Choose **Create app**, enter a name and description, and select **Web API** if asked which API you will use.
+3. Add this local redirect URI:
+
+   ```text
+   http://127.0.0.1:3000/
+   ```
+
+4. Accept the required terms and save the app.
+5. Open the app's **Settings** and copy its **Client ID**. Tunify does not need the Client Secret.
+6. In **Settings → Users Management**, add each tester's name and the email associated with their Spotify account, including the account you will use to test.
+
+The redirect URI must match exactly, including the trailing slash. Use **127.0.0.1**, not `localhost`: Spotify permits HTTP for literal loopback addresses but does not accept `localhost` as a redirect. Hosted redirects must use HTTPS. See [Spotify's redirect URI rules](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri).
+
+## 2. Set up the environment
+
+Clone or download this repository, open a terminal in its root folder, and install dependencies:
+
+```sh
+npm ci
+```
+
+Copy the example configuration:
+
+```sh
+cp .env.example .env.local
+```
+
+On Windows, you can duplicate `.env.example` manually and name the copy `.env.local`.
+
+Edit `.env.local`:
 
 ```dotenv
-NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_client_id
+NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_spotify_client_id
 NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/
 ```
 
-Both settings are public. Never put a client secret in a `NEXT_PUBLIC_` variable. The old `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_CLIENT_ID`, and `APP_URL` variables are no longer used. Restart development or rebuild after changing configuration. For hosting, set an HTTPS root redirect URI matching the hosted site and register that exact URL with Spotify.
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_SPOTIFY_CLIENT_ID` | The Client ID from your Spotify app settings. |
+| `NEXT_PUBLIC_SPOTIFY_REDIRECT_URI` | The exact root URL registered with Spotify for this environment. |
 
-## Check and preview
+Both values are **public configuration** and are included in the browser build. Keep the `NEXT_PUBLIC_` prefix. **Do not add a Spotify Client Secret**; PKCE does not require one. `.env.local` is ignored by Git, while `.env.example` contains placeholders for setup.
+
+Restart the development server after changing these values. Hosted builds must be rebuilt/redeployed because public environment variables are bundled at build time.
+
+## 3. Run locally
+
+```sh
+npm run dev
+```
+
+Open **[http://127.0.0.1:3000/](http://127.0.0.1:3000/)**.
+
+1. Select **Connect Spotify** and complete Spotify authorization.
+2. Spotify returns you to the root page, which completes sign-in automatically.
+3. Type a song or artist, such as `Fleetwood Mac`. Results appear after you pause typing.
+4. Select a result to open it in Spotify.
+5. Select **Logout** to clear Tunify's session. This does not log you out of Spotify itself.
+
+There is no separate callback route to configure: use the root URL above, not `/api/auth/callback/tunify`.
+
+## Checks and production preview
+
+Run all automated checks and create the production build:
 
 ```sh
 npm run check
+```
+
+Then stop any running development server and preview the static build:
+
+```sh
 npm start
 ```
 
-`check` runs lint, TypeScript, mocked protocol tests, and the production build. `npm start` serves the generated `out/` directory at http://127.0.0.1:3000; stop the development server first to free that port. The preview server only serves static files and is not an application backend. Deploy the contents of `out/` to a static host.
+The preview is available at **[http://127.0.0.1:3000/](http://127.0.0.1:3000/)**. It serves the generated `out/` directory and does not provide an application backend.
 
-Individual checks: `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. The build uses Next.js's webpack option because Turbopack's local port requirements were blocked in the development environment.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server. |
+| `npm run lint` | Run ESLint. |
+| `npm run typecheck` | Check TypeScript types. |
+| `npm test` | Run mocked authentication and search tests. |
+| `npm run build` | Export the production site to `out/`. |
+| `npm run check` | Run lint, type checking, tests, and the production build. |
+| `npm start` | Preview an existing production build. |
 
-## How it works
+Tests cover PKCE, callback validation, refresh behavior, logout races, rate limits, malformed token responses, cancellation, and request timeouts. They do not call live Spotify. Verify live login, browser Back after starting login, search, logout, and reviewer account access manually.
 
-- **Login:** Tunify checks that the current origin matches the configured redirect origin before creating PKCE data. Returning via browser Back resets the connecting controls and rechecks the session. The browser creates a random verifier and OAuth state, hashes the verifier using SHA-256, and sends the challenge to Spotify. After redirect, it validates state and exchanges the code using the verifier and public client ID. Callback exchange is shared during React effect replay.
-- **Session:** tokens live in tab-scoped `sessionStorage` for reload continuity. This storage is JavaScript-readable, not equivalent to HTTP-only cookies. Logout clears Tunify's session; it does not log the user out of Spotify itself. Expiring tokens are refreshed once per concurrent batch; rotated refresh tokens are saved. Logout prevents an in-flight refresh from restoring the session.
-- **Search:** after 350 ms without typing, the browser requests up to ten songs and ten artists. Superseded requests are aborted and stale results ignored. The market is currently Australia (`AU`). No personal-data scopes are requested.
-- **Errors:** loading and empty states are visible. Login and search failures use accessible inline alerts with reconnect or retry actions. Requests time out after 15 seconds, including response-body reads. Token-endpoint rate limits enforce a cooldown using `Retry-After`. Temporary refresh failures preserve the session; rejected refresh credentials clear it and prompt reconnection. A 401 triggers one refresh/retry, a 403 explains account access, and a 429 respects `Retry-After` before allowing another request.
-- **Listening:** results link to Spotify. Playback, saved favourites, personal dashboards, and playlist search are outside this focused submission.
+## Deploy on Vercel
 
-## Structure
+1. Import the repository into Vercel using the Next.js framework preset. The project is configured for a static export.
+2. Add these environment variables for **Production**:
+
+   ```dotenv
+   NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_spotify_client_id
+   NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=https://tunifyapp.vercel.app/
+   ```
+
+3. If Vercel asks whether these are **Secret** or **Config**, choose **Config**. These two values are intentionally public; do not remove their prefixes or enter a client secret.
+4. In your Spotify app settings, add **`https://tunifyapp.vercel.app/`** as another redirect URI and save. Keep the local redirect too if you still develop locally.
+5. Deploy, then test sign-in using the production URL.
+
+For your own deployment, replace `https://tunifyapp.vercel.app/` in both places with your actual site URL. The browser's origin must match the configured redirect origin. A preview URL cannot use a production-domain callback with this app; use a stable registered URL and matching environment configuration to test authentication.
+
+See [Vercel's framework environment variable documentation](https://vercel.com/docs/environment-variables/framework-environment-variables) for public variable behavior.
+
+## Troubleshooting
+
+| Problem | What to check |
+| --- | --- |
+| Missing configuration | Create `.env.local`, fill in both variables, and restart the server. On Vercel, check the deployment environment and redeploy. |
+| Invalid redirect URI | Match the Spotify dashboard and environment variable exactly, including scheme, host, port, path, and trailing slash. |
+| Login reports an origin mismatch | Open the configured URL. Locally, use `127.0.0.1:3000` instead of `localhost:3000`. |
+| Login works but search is forbidden (403) | Add the signed-in Spotify account under Users Management and check the app owner's Premium status. |
+| Too many requests (429) | Wait for the displayed cooldown, then retry. |
+| Request times out or connection fails | Check your connection and retry. Requests have a 15-second timeout. |
+| Session cannot be renewed | Connect Spotify again. Temporary network failures preserve the session. |
+| Production preview fails | Run `npm run build` first and stop the development server so port 3000 is free. |
+
+## Project structure
 
 ```text
 src/
-  app/                       Static page, layout, and shared styles
+  app/                  Root page, layout, and shared styles
   components/
-    auth/SpotifySession.tsx  Browser session context and connect button
-    search/SearchBar.tsx     Debounced input and request lifecycle
-    search/SearchResults.tsx Song and artist results
-    layout/                  Navigation and footer
+    auth/               Session provider and connect button
+    layout/             Navigation and footer
+    search/             Search input, welcome state, and results
+    ui/                 Shared error alert
   lib/spotify/
-    auth/session.ts          PKCE, session storage, callback, refresh, logout
-    api/search.ts            Direct Spotify search and HTTP errors
-    config.ts                Public configuration
-    types/index.ts           API response types
-scripts/preview.mjs           Local static-file preview
-tests/spotify.test.mjs       Mocked protocol checks
+    auth/               PKCE, callback, token storage, refresh, and logout
+    api/                Spotify search requests
+    config.ts           Public environment configuration
+    request.ts          Request timeouts and retry timing
+    types/              Spotify response types
+scripts/preview.mjs     Static production preview server
+tests/spotify.test.mjs   Mocked authentication and search tests
 ```
 
-## Before submitting
+Tokens are stored in tab-scoped `sessionStorage` for reload continuity. Search requests return up to ten songs and ten artists and currently use the Australian market (`AU`). No personal-data scopes are requested.
 
-Manually verify login, denied consent, search, no results, logout, reload, keyboard navigation, mobile layout, and the reviewer's authorized account. Automated tests do not call live Spotify or prove account eligibility.
+## AI assistance
 
-Provide the actual AI conversation export alongside the repository, with credentials and personal information removed. This README is a design explanation, not a substitute for the requested AI transcript. AI assisted with implementation and refactoring; review the code and describe the decisions you understand in your own submission.
+AI assisted with implementation, refactoring, and code review. The original prompts and conversation history should be supplied separately with the assessment submission, with credentials and personal information removed. This README is setup documentation, not an AI transcript.
 
-## References
+## Spotify documentation
 
-- [Spotify PKCE flow](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow)
-- [Refreshing Spotify tokens](https://developer.spotify.com/documentation/web-api/tutorials/refreshing-tokens)
-- [Spotify search](https://developer.spotify.com/documentation/web-api/reference/search)
+- [Create and configure an app](https://developer.spotify.com/documentation/web-api/concepts/apps)
+- [Authorization Code with PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow)
+- [Refresh access tokens](https://developer.spotify.com/documentation/web-api/tutorials/refreshing-tokens)
+- [Search API](https://developer.spotify.com/documentation/web-api/reference/search)
