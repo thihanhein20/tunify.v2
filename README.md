@@ -149,10 +149,9 @@ See [Vercel's framework environment variable documentation](https://vercel.com/d
 
 ## Architecture
 
-Expand a diagram below; select the image to view it at full size.
+Select a diagram to view it at full size.
 
-<details>
-<summary><strong>Current architecture — implemented</strong></summary>
+### Current architecture — implemented
 
 The browser handles PKCE authentication, session storage, and debounced Spotify searches. Vercel serves the static app. Authorization returns a code; token exchange and refresh are separate browser requests.
 
@@ -160,10 +159,8 @@ The browser handles PKCE authentication, session storage, and debounced Spotify 
   <img src="readme_images/simple_arch.png" alt="Current Tunify architecture: browser app, sessionStorage, Spotify Accounts, and Spotify Web API" width="900">
 </a>
 
-</details>
 
-<details>
-<summary><strong>Future architecture — proposed</strong></summary>
+### Future architecture — proposed
 
 A backend could move Spotify tokens into server-side sessions, with Redis sharing sessions and rate limits across API instances. This adds hosting and operational complexity and is not part of the current implementation.
 
@@ -173,7 +170,6 @@ A backend could move Spotify tokens into server-side sessions, with Redis sharin
 
 Each API instance would access Redis and both Spotify services independently. The authorization callback travels through the browser to the backend; API instances do not need to call each other. Additional instances do not increase Spotify's quota.
 
-</details>
 
 ## Project structure
 
