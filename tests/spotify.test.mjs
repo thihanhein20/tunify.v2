@@ -5,26 +5,46 @@ import { resolve, dirname } from 'node:path';
 import vm from 'node:vm';
 import ts from 'typescript';
 
+// Model native fetch/body reads rejecting when their signal is aborted.
+function waitForAbort(signal) {
+  return new Promise((_, reject) => {
+    if (signal.aborted) reject(signal.reason);
+    else signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+  });
+}
+
 function app(fetch, options = {}) {
+
   const storage = new Map();
   const window = new EventTarget();
+
   window.location = { origin: 'http://127.0.0.1:3000', search: '', pathname: '/', assign(url) { this.target = url; } };
   window.history = { replaceState() { window.location.search = ''; } };
+
   const cache = new Map();
+
   function load(path) {
+
     path = resolve(path);
     if (cache.has(path)) return cache.get(path);
     const exports = {};
     cache.set(path, exports);
+
     const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+
     vm.runInNewContext(code, { exports, require: name => load(resolve(dirname(path), name + '.ts')), process: {env: {NEXT_PUBLIC_SPOTIFY_CLIENT_ID: 'public-id', NEXT_PUBLIC_SPOTIFY_REDIRECT_URI: 'http://127.0.0.1:3000/'}}, window, sessionStorage: {getItem: key => storage.get(key) ?? null, setItem: (key,value) => storage.set(key,value), removeItem: key => storage.delete(key)}, fetch: async (...args) => {
       const response = await fetch(...args);
       return { json: async () => null, headers: new Headers(), ...response };
-    }, URL, AbortController, TypeError, setTimeout: options.setTimeout ?? setTimeout, clearTimeout: options.clearTimeout ?? clearTimeout, crypto: globalThis.crypto, TextEncoder, Uint8Array, btoa, URLSearchParams, Event, Date: options.Date ?? Date });
+    }, URL, AbortController, TypeError, setTimeout: options.setTimeout ?? setTimeout, clearTimeout: options.clearTimeout ?? clearTimeout, crypto: globalThis.crypto, TextEncoder, Uint8Array, btoa, URLSearchParams, Event, Date: options.Date ?? Date
+    });
+
     return exports;
   }
-  return { auth: load('src/lib/spotify/auth/session.ts'), search: load('src/lib/spotify/api/search.ts').searchSpotify, storage, window };
+  return {
+    auth: load('src/lib/spotify/auth/session.ts'), search: load('src/lib/spotify/api/search.ts').searchSpotify, storage, window
+  };
 }
+
 const tokens = {access_token:'access', refresh_token:'refresh', expires_in:3600};
 const saved = (expiresAt = Date.now()+3600000) => JSON.stringify({accessToken:'old',refreshToken:'refresh',expiresAt});
 
@@ -32,84 +52,123 @@ test('PKCE challenge matches the RFC 7636 vector', async () => {
   const {auth} = app();
   assert.equal(await auth.createChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'), 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
 });
+
 test('login uses S256 and no client secret or personal-data scopes', async () => {
+
   const {auth,window} = app(); await auth.login();
   const url = new URL(window.location.target);
+
   assert.equal(url.searchParams.get('code_challenge_method'),'S256');
   assert.equal(url.searchParams.get('redirect_uri'),'http://127.0.0.1:3000/');
   assert.equal(url.searchParams.has('client_secret'),false);
-  assert.equal(url.searchParams.has('scope'),false);
+  assert.equal(url.searchParams.has('scope'), false);
+
 });
+
 test('invalid callback state is rejected before a token request', async () => {
+
   let calls=0; const {auth,storage,window}=app(async()=>{calls++;});
   storage.set('tunify.pkce',JSON.stringify({state:'expected',verifier:'v',createdAt:Date.now()}));
   window.location.search='?code=c&state=wrong';
   await assert.rejects(auth.completeLogin(),/invalid or expired/); assert.equal(calls,0);
-  assert.equal(window.location.search,'');
+  assert.equal(window.location.search, '');
+
 });
+
 test('callback is single-flight and exchanges the verifier, never a secret', async () => {
+
   let calls=0; const {auth,storage,window}=app(async (url,options)=>{
     calls++; assert.equal(options.body.get('code_verifier'),'verifier'); assert.equal(options.body.has('client_secret'),false);
     return {ok:true,json:async()=>tokens};
   });
+
   storage.set('tunify.pkce',JSON.stringify({state:'state',verifier:'verifier',createdAt:Date.now()}));
-  window.location.search='?code=c&state=state';
-  await Promise.all([auth.completeLogin(),auth.completeLogin()]); assert.equal(calls,1);
-  assert.equal(auth.readSession().accessToken,'access');
+  window.location.search = '?code=c&state=state';
+
+  await Promise.all([auth.completeLogin(), auth.completeLogin()]); assert.equal(calls, 1);
+
+  assert.equal(auth.readSession().accessToken, 'access');
+
 });
+
 test('expired token refresh is shared and persists rotated tokens', async () => {
+
   let calls=0; const {auth,storage}=app(async()=>{calls++;return {ok:true,json:async()=>({...tokens,refresh_token:'rotated'})};});
   storage.set('tunify.session',saved(0));
   await Promise.all([auth.getAccessToken(),auth.getAccessToken()]);
-  assert.equal(calls,1); assert.equal(auth.readSession().refreshToken,'rotated');
+  assert.equal(calls, 1); assert.equal(auth.readSession().refreshToken, 'rotated');
+
 });
+
 test('logout during a refresh cannot restore the session', async () => {
+
   let finish; const {auth,storage}=app(()=>new Promise(resolve=>{finish=resolve;}));
   storage.set('tunify.session',saved(0)); const pending=auth.getAccessToken(); auth.logout();
-  finish({ok:true,json:async()=>tokens}); await assert.rejects(pending); assert.equal(auth.readSession(),null);
+  finish({ ok: true, json: async () => tokens }); await assert.rejects(pending); assert.equal(auth.readSession(), null);
+
 });
+
 test('search encodes input and retries a 401 once with a refreshed token', async () => {
-  let searches=0; const {search,storage}=app(async(url)=>{
+  let searches = 0; const { search, storage } = app(async (url) => {
+
     if(url.includes('/api/token')) return {ok:true,json:async()=>tokens};
     assert.equal(new URL(url).searchParams.get('q'),'AC/DC & friends');
     searches++; return searches===1 ? {status:401} : {ok:true,json:async()=>({tracks:{items:[]}})};
   });
+
   storage.set('tunify.session',saved()); await search('AC/DC & friends'); assert.equal(searches,2);
 });
+
 test('rate limits block subsequent requests until Retry-After', async () => {
-  let calls=0; const {search,storage}=app(async()=>{calls++;return {status:429,headers:new Headers({'Retry-After':'60'})};});
+
+  let calls = 0; const { search, storage } = app(async () => { calls++; return { status: 429, headers: new Headers({ 'Retry-After': '60' }) }; });
+
   storage.set('tunify.session',saved()); await assert.rejects(search('one'),/60 seconds/); await assert.rejects(search('two'),/seconds/); assert.equal(calls,1);
 });
+
 test('blank and cancelled searches do not call Spotify', async () => {
+
   let calls=0; const {search,storage}=app(async()=>{calls++;}); storage.set('tunify.session',saved());
-  await search('  '); const controller=new AbortController(); controller.abort();
-  await assert.rejects(search('song',controller.signal)); assert.equal(calls,0);
+  await search('  '); const controller = new AbortController(); controller.abort();
+
+  await assert.rejects(search('song', controller.signal)); assert.equal(calls, 0);
+
 });
 
 test('temporary refresh failures preserve the session and allow retry', async () => {
   for (const failure of ['network', 503]) {
+
     let calls = 0;
+
     const {auth,storage} = app(async () => {
       calls++;
       if (calls > 1) return {ok:true,json:async()=>tokens};
       if (failure === 'network') throw new Error('Network offline');
       return {ok:false,status:failure,json:async()=>({error:'temporarily_unavailable'})};
     });
-    storage.set('tunify.session',saved(0));
+
+    storage.set('tunify.session', saved(0));
+
     await assert.rejects(auth.getAccessToken());
+
     assert.equal(auth.readSession().refreshToken,'refresh');
-    assert.equal(await auth.getAccessToken(),'access');
+    assert.equal(await auth.getAccessToken(), 'access');
+
   }
+
 });
 
 test('rejected refresh credentials clear the session and announce expiry', async () => {
   const {auth,storage,window}=app(async()=>({ok:false,status:400,json:async()=>({error:'invalid_grant'})}));
-  let expired=false;
+  let expired = false;
+
   window.addEventListener('tunify-session-expired',()=>{expired=true;});
   storage.set('tunify.session',saved(0));
-  await assert.rejects(auth.getAccessToken(),/session expired/);
+  await assert.rejects(auth.getAccessToken(), /session expired/);
+
   assert.equal(auth.readSession(),null);
-  assert.equal(expired,true);
+  assert.equal(expired, true);
+
 });
 
 test('search network failures show a useful message without logging out', async () => {
@@ -138,15 +197,20 @@ test('token cooldown honours seconds, HTTP dates, and missing Retry-After', asyn
       return calls===1
         ? {ok:false,status:429,headers:new Headers(header===null ? {} : {'Retry-After':header}),json:async()=>({error:'rate_limit'})}
         : {ok:true,json:async()=>tokens};
-    }, {Date:Clock});
-    storage.set('tunify.session',saved(0));
+    }, { Date: Clock });
+
+    storage.set('tunify.session', saved(0));
+
     await assert.rejects(auth.getAccessToken(),/seconds/);
     await assert.rejects(auth.getAccessToken(),/seconds/);
-    assert.equal(calls,1);
+    assert.equal(calls, 1);
+
     assert.equal(auth.readSession().refreshToken,'refresh');
-    now+=header===null ? 30_000 : 60_000;
+    now += header === null ? 30_000 : 60_000;
+
     assert.equal(await auth.getAccessToken(),'access');
-    assert.equal(calls,2);
+    assert.equal(calls, 2);
+
   }
 });
 
@@ -160,18 +224,23 @@ test('invalid token payloads never overwrite the saved session', async () => {
 });
 
 test('token timeout covers stalled headers and bodies, preserves session, and permits retry', async () => {
-  for (const stage of ['headers','body']) {
+  for (const stage of ['headers', 'body']) {
+
     let timeout, calls=0, requestSignal;
     const {auth,storage}=app(async(url,options)=>{
       calls++; requestSignal=options.signal;
       if(calls>1) return {ok:true,json:async()=>tokens};
-      if(stage==='headers') return new Promise(()=>{});
-      return {ok:true,json:()=>new Promise(()=>{})};
-    }, {setTimeout: callback=>{timeout=callback;return 1;},clearTimeout:()=>{}});
+      if(stage==='headers') return waitForAbort(options.signal);
+      return { ok: true, json: () => waitForAbort(options.signal) };
+
+    }, { setTimeout: callback => { timeout = callback; return 1; }, clearTimeout: () => { } });
+
     storage.set('tunify.session',saved(0));
     const pending=auth.getAccessToken();
     await Promise.resolve(); await Promise.resolve();
+
     timeout();
+
     await assert.rejects(pending,/too long/);
     assert.equal(requestSignal.aborted,true);
     assert.equal(auth.readSession().refreshToken,'refresh');
@@ -181,7 +250,7 @@ test('token timeout covers stalled headers and bodies, preserves session, and pe
 
 test('search timeout is recoverable and aborts the underlying request', async () => {
   let timeout, signal;
-  const {search,storage,auth}=app(async(url,options)=>{signal=options.signal;return new Promise(()=>{});},
+  const {search,storage,auth}=app(async(url,options)=>{signal=options.signal;return waitForAbort(signal);},
     {setTimeout:callback=>{timeout=callback;return 1;},clearTimeout:()=>{}});
   storage.set('tunify.session',saved());
   const pending=search('song'); await new Promise(resolve => setImmediate(resolve)); timeout();
